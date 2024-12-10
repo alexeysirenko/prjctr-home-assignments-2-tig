@@ -1,0 +1,4 @@
+http://localhost/ GET
+http://localhost/messages?page=1 GET
+http://localhost/messages POST {"message": "test"}
+http://localhost/search?text=test GET
