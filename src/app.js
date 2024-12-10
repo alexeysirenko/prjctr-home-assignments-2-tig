@@ -6,7 +6,6 @@ const bodyParser = require("body-parser");
 const { Client } = require("@elastic/elasticsearch");
 const winston = require("winston");
 
-// Logger configuration
 const logger = winston.createLogger({
   level: "info",
   format: winston.format.combine(
@@ -29,14 +28,12 @@ const esClient = new Client({ node: ELASTICSEARCH_HOST });
 
 app.use(bodyParser.json());
 
-// Mongoose schema and model
 const messageSchema = new mongoose.Schema({
   message: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
 const Message = mongoose.model("Message", messageSchema);
 
-// Ensure Elasticsearch index exists
 const ensureElasticsearchIndex = async () => {
   const indexExists = await esClient.indices.exists({ index: "messages" });
   if (!indexExists) {
@@ -58,7 +55,6 @@ const ensureElasticsearchIndex = async () => {
   }
 };
 
-// Initialize application
 mongoose
   .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
@@ -66,7 +62,6 @@ mongoose
   })
   .then(() => ensureElasticsearchIndex())
   .then(() => {
-    // Ensure index exists after starting
     app.listen(PORT, () => {
       logger.info(`Server is running on http://localhost:${PORT}`);
     });
@@ -76,7 +71,6 @@ mongoose
     process.exit(1);
   });
 
-// Application routes
 app.get("/", async (req, res) => {
   try {
     const mongoCheck = await Message.findOne({});
@@ -161,9 +155,6 @@ app.get("/search", async (req, res) => {
   };
   try {
     const result = await esClient.search(request);
-
-    // Debugging the full response
-    logger.info("Full Elasticsearch response", { request, result });
 
     const hits = result.hits.hits.map((hit) => hit._source);
     res.status(200).json({ results: hits, total: result.hits.total.value });
