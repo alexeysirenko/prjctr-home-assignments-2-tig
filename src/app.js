@@ -39,7 +39,7 @@ const Message = mongoose.model("Message", messageSchema);
 // Ensure Elasticsearch index exists
 const ensureElasticsearchIndex = async () => {
   const indexExists = await esClient.indices.exists({ index: "messages" });
-  if (!indexExists.body) {
+  if (!indexExists) {
     await esClient.indices.create({
       index: "messages",
       body: {

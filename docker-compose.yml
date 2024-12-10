@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 services:
   app:
@@ -12,6 +12,8 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/mydb
       - ELASTICSEARCH_HOST=http://elasticsearch:9200
     depends_on:
+      mongodb:
+        condition: service_started
       elasticsearch:
         condition: service_healthy
     networks:
@@ -34,10 +36,16 @@ services:
       - discovery.type=single-node
     ports:
       - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://elasticsearch:9200/_cluster/health | grep -q '\"status\":\"green\"'"]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://elasticsearch:9200/_cluster/health | grep -q '\"status\":\"yellow\"\\|\"status\":\"green\"'",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -45,6 +53,7 @@ services:
 
 volumes:
   mongo-data:
+  es-data:
 
 networks:
   app-network:
