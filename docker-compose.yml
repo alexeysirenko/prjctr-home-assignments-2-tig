@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: . # Path to the Node.js app Dockerfile
+    container_name: node-app
+    ports:
+      - "4000:4000" # Expose port 4000
+    environment:
+      - PORT=4000
+      - MONGO_URI=mongodb://mongodb:27017/mydb # Connect to MongoDB using the service name
+    depends_on:
+      - mongodb # Ensure MongoDB starts before the app
+    networks:
+      - app-network # Connect the app to the custom network
+
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    ports:
+      - "27017:27017" # Expose MongoDB's default port
+    volumes:
+      - mongo-data:/data/db # Persist MongoDB data
+    networks:
+      - app-network # Connect MongoDB to the custom network
+
+volumes:
+  mongo-data:
+
+networks:
+  app-network:
+    driver: bridge
