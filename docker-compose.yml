@@ -7,12 +7,15 @@ services:
     ports:
       - "80:80"
     volumes:
+      - /var/log/nginx:/var/log/nginx
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       app:
         condition: service_started
     networks:
       - app-network
+    labels:
+      - "service.name=nginx"
 
   app:
     build:
@@ -25,12 +28,15 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/mydb
       - ELASTICSEARCH_HOST=http://elasticsearch:9200
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      #elasticsearch:
+      #condition: service_healthy
+      #condition: service_started
       mongodb:
         condition: service_started
     networks:
       - app-network
+    labels:
+      - "service.name=app"
 
   mongodb:
     image: mongo:6.0.5
@@ -41,6 +47,8 @@ services:
       - mongo-data:/data/db
     networks:
       - app-network
+    labels:
+      - "service.name=mongodb"
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.5
@@ -54,15 +62,13 @@ services:
     networks:
       - app-network
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl -s http://elasticsearch:9200/_cluster/health | grep -q '\"status\":\"yellow\"\\|\"status\":\"green\"'",
-        ]
+      #test: [ "CMD-SHELL", "curl -s http://elasticsearch:9200/_cluster/health | grep -q '\"status\":\"yellow\"\\|\"status\":\"green\"'"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 50
       start_period: 10s
+    labels:
+      - "service.name=elasticsearch"
 
   telegraf:
     image: telegraf:latest
@@ -71,8 +77,16 @@ services:
     #entrypoint: ["sh", "-c", "chmod 666 /var/run/docker.sock"] # without this docker metrics weren't collecting
     environment:
       - HOSTNAME=telegraf
+      - HOST_PROC=/host/proc
+      - HOST_SYS=/host/sys
+    user: "${TELEGRAF_UID}:${TELEGRAF_GID}" # Set UID/GID dynamically
+    entrypoint:
+      - sh
+      - -c
+      - |
+        chmod 666 /var/run/docker.sock && exec telegraf
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers/:/var/lib/docker/containers/:ro
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
     depends_on:
