@@ -28,9 +28,8 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/mydb
       - ELASTICSEARCH_HOST=http://elasticsearch:9200
     depends_on:
-      #elasticsearch:
-      #condition: service_healthy
-      #condition: service_started
+      elasticsearch:
+        condition: service_healthy
       mongodb:
         condition: service_started
     networks:
@@ -62,8 +61,12 @@ services:
     networks:
       - app-network
     healthcheck:
-      #test: [ "CMD-SHELL", "curl -s http://elasticsearch:9200/_cluster/health | grep -q '\"status\":\"yellow\"\\|\"status\":\"green\"'"]
-      interval: 5s
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -o /dev/null -w '%{http_code}' http://elasticsearch:9200 | grep -q '^200$'",
+        ]
+      interval: 2s
       timeout: 5s
       retries: 50
       start_period: 10s
