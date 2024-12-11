@@ -67,9 +67,13 @@ services:
   telegraf:
     image: telegraf:latest
     container_name: telegraf
+    privileged: true
+    #entrypoint: ["sh", "-c", "chmod 666 /var/run/docker.sock"] # without this docker metrics weren't collecting
     environment:
       - HOSTNAME=telegraf
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers/:/var/lib/docker/containers/:ro
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
     depends_on:
       - influxdb
@@ -79,9 +83,17 @@ services:
   influxdb:
     image: influxdb:2.0
     container_name: influxdb
+    privileged: true
     ports:
       - "8086:8086"
     environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=telegraf
+      - DOCKER_INFLUXDB_INIT_BUCKET=metrics
+      - INFLUXDB_INIT_RETENTION=30d
+      - DOCKER_INFLUXDB_INIT_RETENTION=30d
       - INFLUXDB_ADMIN_USER=admin
       - INFLUXDB_ADMIN_PASSWORD=adminpassword
       - INFLUXDB_DB=metrics
